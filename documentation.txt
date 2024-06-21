@@ -1,0 +1,160 @@
+############################################
+# Authors:                                 #
+#  - Vonteri Varshith Reddy (21CS10081)    #
+#  - Yelisetty Karthikeya S M (21CS30060)  #
+############################################
+
+################################################################################################
+Documentation for msocket.h and msocket.c:
+
+int sock_id: Socket ID.
+char IP[16]: IP address.
+int port: Port number.
+int err_no: Error number.
+
+Data Structures:
+1. SOCK_INFO:
+   - Fields:
+     - int sock_id: The socket ID.
+     - char IP[16]: The IP address associated with the socket.
+     - int port: The port number associated with the socket.
+     - int err_no: An error number associated with the socket.
+   - Purpose: This structure stores information about a socket.
+
+2. mtp_socket:
+   - Fields:
+     - int is_free: Flag indicating if the MTP socket is free or in use.
+     - int pid: Process ID associated with the MTP socket.
+     - int udp_sock: UDP socket ID associated with the MTP socket.
+     - char source_ip[16]: Source IP address for the MTP socket.
+     - int source_port: Source port number for the MTP socket.
+     - char dest_ip[16]: Destination IP address for the MTP socket.
+     - int dest_port: Destination port number for the MTP socket.
+     - char send_buffer[MAX_SEND_BUFFER_SIZE][MESSAGE_SIZE]: Buffer for storing messages to send.
+     - char receive_buffer[MAX_RECEIVE_BUFFER_SIZE][MESSAGE_SIZE]: Buffer for storing received messages.
+     - int send_seq_num[MAX_SEND_BUFFER_SIZE]: Sequence numbers for messages in the send buffer.
+     - int receive_seq_num[MAX_RECEIVE_BUFFER_SIZE]: Sequence numbers for messages in the receive buffer.
+     - struct sliding_window swnd: Sliding window for the sender.
+     - struct sliding_window rwnd: Sliding window for the receiver.
+   - Purpose: This structure represents an MTP socket and stores relevant information for communication.
+
+3. swnd:
+   - Fields:
+     - int size: Size of the sender window.
+     - int sequence_numbers[MAX_WINDOW_SIZE]: Array of sequence numbers for the sender window.
+   - Purpose: This structure represents the sender window for an MTP socket.
+
+4. rwnd:
+    - Fields:
+      - int size: Size of the receiver window.
+      - int sequence_numbers[MAX_WINDOW_SIZE]: Array of sequence numbers for the receiver window.
+    - Purpose: This structure represents the receiver window for an MTP socket.
+
+
+
+Functions:
+
+1. int m_socket(int domain, int type, int protocol):
+   - Description: Creates a socket with the specified domain, type, and protocol.
+   - Parameters: domain - The communication domain for the socket, type - The type of socket to be created (must be SOCK_MTP), protocol - The protocol to be used by the socket.
+   - Returns: The socket ID on success, -1 on failure.
+
+2. int m_bind(int sockfd, char *source_ip, int source_port, char *dest_ip, int dest_port):
+   - Description: Binds a socket to a specified source IP address and port number, and destination IP address and port number.
+   - Parameters: sockfd - The socket ID to bind, source_ip - The source IP address to bind to, source_port - The source port number to bind to, dest_ip - The destination IP address to bind to, dest_port - The destination port number to bind to.
+   - Returns: 0 on success, -1 on failure.
+
+
+3. int m_sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen):
+   - Description: Sends a message through the socket to a specified destination address.
+   - Parameters: sockfd - The socket ID to use for sending, buf - Pointer to the message to send, len - The length of the message in bytes, flags - Special flags for sending, dest_addr - Pointer to the destination address structure, addrlen - The size of the destination address structure.
+   - Returns: The number of bytes sent on success, -1 on failure.
+
+4. int m_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen):
+   - Description: Receives a message through the socket along with the sender's address information.
+   - Parameters: sockfd - The socket ID to use for receiving, buf - Pointer to the buffer to store the received message, len - The length of the buffer in bytes, flags - Special flags for receiving, src_addr - Pointer to the structure to store the sender's address, addrlen - Pointer to the size of the sender's address structure.
+   - Returns: The number of bytes received on success, -1 on failure.
+
+
+5. void m_close(int sock_id):
+   - Description: Closes the specified socket.
+   - Parameters: sock_id - The socket ID to close.
+   - Returns: void.
+
+6. int dropMessage(float p):
+   - Description: Determines if a message should be dropped based on the probability p.
+   - Parameters: p - The probability of dropping a message.
+   - Returns: 1 if the message should be dropped, 0 otherwise.
+
+################################################################################################
+Documentation for initmsocket.c:
+
+Functions:
+1. void shm_init():
+   - Description: Initializes shared memory segments and semaphores required for communication.
+
+2. char get_header(int seq_num, int win_len, int is_ack):
+   - Description: Creates a header byte for the MTP packet based on sequence number, window length, and acknowledgment flag.
+   - Parameters: seq_num - Sequence number of the packet, win_len - Window length, is_ack - Acknowledgment flag.
+   - Returns: The header byte.
+
+3. void process_header(char header, int *seq_num, int *win_len, int *is_ack):
+   - Description: Extracts sequence number, window length, and acknowledgment flag from the header byte of an MTP packet.
+   - Parameters: header - The header byte, seq_num - Pointer to store the sequence number, win_len - Pointer to store the window length, is_ack - Pointer to store the acknowledgment flag.
+   - Returns: void.
+
+4. void *S(void *arg):
+   - Description: Sender thread function. Sends messages from the send buffer over the UDP socket.
+   - Parameters: arg - Argument (not used).
+   - Returns: void pointer (not used).
+
+5. void *R(void *arg):
+   - Description: Receiver thread function. Receives messages over the UDP socket and processes them.
+   - Parameters: arg - Argument (not used).
+   - Returns: void pointer (not used).
+
+6. void *G(void *arg):
+   - Description: Garbage collector thread function. Cleans up MTP sockets associated with terminated processes.
+   - Parameters: arg - Argument (not used).
+   - Returns: void pointer (not used).
+
+7. void exit_handler(int sig):
+   - Description: Signal handler for graceful exit. Cancels threads and cleans up resources.
+   - Parameters: sig - Signal number (not used).
+   - Returns: void.
+
+8. int main():
+   - Description: Main function. Initializes shared memory and semaphores, creates threads, and handles socket initialization.
+   - Parameters: None.
+   - Returns: 0 on success.
+
+################################################################################################
+Documentation for Runninng the Code:
+- `make runinit`: Compiles and runs the initmsocket.c file.
+- `./sender -p 8080 -h 127.0.0.1 -P 9090 -H 127.0.0.1 -f sample_100kB.txt`
+- `./receiver -p 9090 -h 127.0.0.1 -P 8080 -H 127.0.0.1 -f received.txt`
+- `make clean`: Removes the compiled files.
+
+Note: Even if all these command line args are not passed, the addresses and ports are appropriately prompted by the user program.
+
+For Multi user test:
+./sender -p 8080 -h 127.0.0.1 -P 9090 -H 127.0.0.1 -f sample_100kB.txt
+./receiver -p 9090 -h 127.0.0.1 -P 8080 -H 127.0.0.1 -f received.txt
+./sender -p 8081 -h 127.0.0.1 -P 9091 -H 127.0.0.1 -f sample_100kB.txt
+./receiver -p 9091 -h 127.0.0.1 -P 8081 -H 127.0.0.1 -f received2.txt
+
+################################################################################################
+Report for the MTP Protocol:
+
+| Probability | Number of Messages Sent  | Number of Messages Received  | Number of Messages Dropped  |
+|-------------|--------------------------|------------------------------|-----------------------------|
+| 0.05        | 213                      | 200                          | 13                          |
+| 0.10        | 246                      | 200                          | 42                          |
+| 0.15        | 265                      | 200                          | 64                          |
+| 0.20        | 302                      | 200                          | 105                         |
+| 0.25        | 372                      | 200                          | 147                         |
+| 0.30        | 414                      | 200                          | 196                         |
+| 0.35        | 489                      | 200                          | 288                         |
+| 0.40        | 534                      | 200                          | 375                         |
+| 0.45        | 623                      | 200                          | 428                         |
+| 0.50        | 756                      | 200                          | 561                         |
