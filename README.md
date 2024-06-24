@@ -1,4 +1,3 @@
-# mtp_socket
 # MTP: Modified Transport Protocol
 
 ## Where UDP Gets Its Act Together
