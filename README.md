@@ -30,7 +30,7 @@ Complete Documentation is present at [doc](./documentation.txt)
 
 1. Clone the repository:
    ```
-   git clone https://github.com/lurkingryuu/mtp-protocol.git
+   git clone https://github.com/lurkingryuu/mtp_socket.git
    cd mtp-protocol
    ```
 
